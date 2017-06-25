@@ -8,6 +8,7 @@ import mimetypes
 
 # todo make live update work on terminal 
 # create thread pool
+# make sure you get exact number you specify
 
 def downloadPhoto(link, name, output_lines):
 	
@@ -24,6 +25,10 @@ def downloadPhoto(link, name, output_lines):
 	except urllib2.HTTPError as e:
 		updateDownloadStatus(output_lines, link, name, str(e))
 		return
+	except urllib2.URLError as urlError:
+		# print "Error with URL: "+link
+		updateDownloadStatus(output_lines, link, name, str(urlError))
+		return
 	picLocal = open(out_file+str(name)+'.jpg', 'wb')
 	picLocal.write(picOnline)
 	picLocal.close()
@@ -37,13 +42,16 @@ def updateDownloadStatus(output_lines, link, lineNum, status):
                 )
 
 class DownloadThread(threading.Thread):
-	def __init__(self, line, count, output_lines):
+	def __init__(self, line, count, output_lines, sem):
 		threading.Thread.__init__(self)
 		self.line = line
 		self.count = count
 		self.output_lines = output_lines
+		self.sem = sem
 	def run(self):
+		# self.sem.acquire()
 		downloadPhoto(self.line, self.count, self.output_lines)
+		# self.sem.release()
 		
 
 
@@ -54,21 +62,22 @@ number_of_downloads = sys.argv[3]
 if __name__ == "__main__":
 	with output(output_type='dict') as output_lines:
 		threads = []
+		threadLimiter = threading.BoundedSemaphore(200)
 		print "Starting batch download from source: "+source_link
 		response = urllib2.urlopen(source_link)
 		links = response.read()
 		count = 0
 		lines = links.splitlines()
-		if number_of_downloads == "" or number_of_downloads > len(lines):
+		if number_of_downloads == "" or int(number_of_downloads) > len(lines):
 			for line in lines:
-				thread = DownloadThread(line, count, output_lines)
+				thread = DownloadThread(line, count, output_lines, threadLimiter)
 				threads.append(thread)
 				thread.start()
 				count+=1
 		else:
 			for i in xrange(int(number_of_downloads)):
 				line = lines[i]
-				thread = DownloadThread(line, count, output_lines)
+				thread = DownloadThread(line, count, output_lines, threadLimiter)
 				threads.append(thread)
 				updateDownloadStatus(output_lines, line, count, "Downloading..")
 				thread.start()
