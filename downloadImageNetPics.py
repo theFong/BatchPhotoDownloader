@@ -5,6 +5,10 @@ import time
 from reprint import output
 import mimetypes
 
+
+# todo make live update work on terminal 
+# create thread pool
+
 def downloadPhoto(link, name, output_lines):
 	
 	try:
@@ -26,7 +30,7 @@ def downloadPhoto(link, name, output_lines):
 	updateDownloadStatus(output_lines, link, name, "Done")
 
 def updateDownloadStatus(output_lines, link, lineNum, status):
-	returncl
+	return
 	output_lines[str(lineNum)] = "{lnk} | Status: {sts}".format(
                 lnk = link,
                 sts = status
@@ -55,7 +59,7 @@ if __name__ == "__main__":
 		links = response.read()
 		count = 0
 		lines = links.splitlines()
-		if number_of_downloads == "":
+		if number_of_downloads == "" or number_of_downloads > len(lines):
 			for line in lines:
 				thread = DownloadThread(line, count, output_lines)
 				threads.append(thread)
